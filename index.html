@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Life OS" />
+  <meta name="theme-color" content="#07070e" />
+  <title>LoS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #07070e;
+      --surface:      #0e0e1c;
+      --surface-2:    #141428;
+      --border:       rgba(255,255,255,0.07);
+      --border-h:     rgba(255,255,255,0.13);
+      --purple:       #7c5ff5;
+      --purple-l:     #a78bfa;
+      --purple-dim:   rgba(124,95,245,0.14);
+      --green:        #34d399;
+      --orange:       #fb923c;
+      --red:          #f87171;
+      --blue:         #60a5fa;
+      --t1:           #f0f0f8;
+      --t2:           #8888aa;
+      --r:            14px;
+    }
+
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--t1);
+      font-family: 'Inter', -apple-system, sans-serif;
+    }
+
+    /* ══════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════ */
+    .app-header {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: rgba(7,7,14,0.94);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      padding: env(safe-area-inset-top) 20px 0;
+    }
+    .header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .h-greeting-sub  { font-size: 11px; color: var(--t2); margin-bottom: 2px; }
+    .h-greeting-main { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+    .h-greeting-main span { color: var(--purple-l); }
+    .h-clock  { font-size: 22px; font-weight: 300; letter-spacing: -0.5px; text-align: right; }
+    .h-date   { font-size: 10px; color: var(--t2); text-align: right; margin-top: 1px; }
+
+    /* ══════════════════════════════════════
+       BOTTOM NAV  (mobile only)
+    ══════════════════════════════════════ */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(14,14,28,0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px; padding: 10px 0;
+      border: none; background: transparent;
+      color: var(--t2); font-family: inherit;
+      font-size: 10px; font-weight: 500; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.2s;
+    }
+    .nav-btn .ni { font-size: 19px; line-height: 1; }
+    .nav-btn.active { color: var(--purple-l); }
+
+    /* ══════════════════════════════════════
+       SCROLL WRAPPER
+    ══════════════════════════════════════ */
+    .scroll-wrap {
+      padding-top: calc(60px + env(safe-area-inset-top) + 12px);
+      padding-bottom: calc(64px + env(safe-area-inset-bottom) + 12px);
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    /* ══════════════════════════════════════
+       NORTH STAR
+    ══════════════════════════════════════ */
+    .north-star {
+      display: flex; align-items: center; gap: 10px;
+      background: linear-gradient(135deg,rgba(124,95,245,0.09),rgba(167,139,250,0.03));
+      border: 1px solid rgba(124,95,245,0.22);
+      border-radius: var(--r);
+      padding: 11px 16px;
+      margin-bottom: 14px;
+    }
+    .ns-lbl {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--purple-l); opacity: 0.75; white-space: nowrap;
+    }
+    .ns-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--t1); font-family: inherit; font-size: 13px;
+    }
+    .ns-input::placeholder { color: var(--t2); }
+
+    /* ══════════════════════════════════════
+       MOBILE TABS: show only active section
+    ══════════════════════════════════════ */
+    .section { margin-bottom: 12px; }
+
+    /* Mobile default: hide non-active sections */
+    @media (max-width: 767px) {
+      .section { display: none; }
+      body.tab-dnes   .sec-dnes,
+      body.tab-fokus  .sec-fokus,
+      body.tab-habits .sec-habits,
+      body.tab-ludia  .sec-ludia,
+      body.tab-review .sec-review  { display: block; }
+    }
+
+    /* ══════════════════════════════════════
+       DESKTOP LAYOUT
+    ══════════════════════════════════════ */
+    @media (min-width: 768px) {
+      .bottom-nav { display: none; }
+
+      .scroll-wrap {
+        max-width: 1180px; margin: 0 auto;
+        padding-left: 28px; padding-right: 28px;
+        padding-bottom: 40px;
+      }
+
+      .section { display: block !important; }
+
+      /* 3-col top grid */
+      .desktop-grid-top {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      /* 2-col bottom grid: wide left, narrow right */
+      .desktop-grid-bottom {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 14px;
+      }
+      .desktop-right { display: flex; flex-direction: column; gap: 14px; }
+      .desktop-right .section { margin-bottom: 0; }
+
+      .h-greeting-main { font-size: 24px; }
+      .h-clock { font-size: 26px; }
+    }
+
+    /* ══════════════════════════════════════
+       CARD
+    ══════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+      transition: border-color 0.2s;
+    }
+    .card-hdr {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 11px; font-weight: 600; color: var(--t2);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ci {
+      width: 26px; height: 26px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .ci-p { background: rgba(124,95,245,0.15); }
+    .ci-g { background: rgba(52,211,153,0.13); }
+    .ci-o { background: rgba(251,146,60,0.13); }
+    .ci-b { background: rgba(96,165,250,0.13); }
+
+    /* ══════════════════════════════════════
+       CHECK-IN
+    ══════════════════════════════════════ */
+    .energy-row { display: flex; gap: 7px; margin: 10px 0 12px; }
+    .ebtn {
+      flex: 1; padding: 10px 2px; border: 1px solid var(--border);
+      border-radius: 10px; background: transparent; font-size: 20px;
+      cursor: pointer; text-align: center; transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ebtn.active { border-color: var(--purple); background: var(--purple-dim); }
+    .energy-lbl {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: var(--t2);
+      margin: -8px 0 12px; padding: 0 2px;
+    }
+    .txt-area {
+      width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 13px; color: var(--t1);
+      font-family: inherit; font-size: 14px; outline: none;
+      resize: none; transition: border-color 0.2s;
+    }
+    .txt-area:focus { border-color: var(--purple); }
+    .txt-area::placeholder { color: var(--t2); }
+    .ci-done-energy { font-size: 22px; margin-bottom: 10px; }
+    .ci-done-lbl { font-size: 11px; color: var(--t2); margin-bottom: 5px; }
+    .ci-done-intent {
+      font-size: 14px; background: var(--surface-2);
+      border-radius: 10px; padding: 11px 13px; line-height: 1.5;
+    }
+    .done-badge { font-size: 12px; color: var(--green); display: none; }
+
+    /* ══════════════════════════════════════
+       FOCUS / TIMER
+    ══════════════════════════════════════ */
+    .focus-tag {
+      font-size: 11px; padding: 3px 9px; border-radius: 20px;
+      background: var(--purple-dim); color: var(--purple-l); font-weight: 500;
+    }
+    .focus-title { font-size: 20px; font-weight: 700; line-height: 1.25; margin: 10px 0 14px; }
+    .pbar { height: 4px; background: var(--surface-2); border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+    .pbar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--purple-l));
+      border-radius: 4px; transition: width 0.5s;
+    }
+    .focus-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--t2); margin-bottom: 18px; }
+    .timer-num {
+      font-size: 64px; font-weight: 200; letter-spacing: -3px;
+      text-align: center; margin: 6px 0 20px;
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-btns { display: flex; gap: 10px; }
+
+    /* ══════════════════════════════════════
+       PROGRESS RING
+    ══════════════════════════════════════ */
+    .ring-wrap { display: flex; flex-direction: column; align-items: center; padding: 6px 0 2px; }
+    .ring-box { position: relative; width: 112px; height: 112px; margin: 0 auto 8px; }
+    .ring-box svg { transform: rotate(-90deg); }
+    .ring-num {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      font-size: 28px; font-weight: 700;
+    }
+    .ring-lbl { font-size: 11px; color: var(--t2); }
+    .stats-g {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 14px;
+    }
+    .sbox { background: var(--surface-2); border-radius: 10px; padding: 10px; text-align: center; }
+    .sv { font-size: 18px; font-weight: 700; }
+    .sl { font-size: 10px; color: var(--t2); margin-top: 2px; }
+
+    /* ══════════════════════════════════════
+       TASKS
+    ══════════════════════════════════════ */
+    .tabs {
+      display: flex; gap: 4px; background: var(--surface-2);
+      border-radius: 10px; padding: 3px; margin-bottom: 14px;
+    }
+    .tbtn {
+      flex: 1; padding: 8px; border: none; border-radius: 8px;
+      background: transparent; color: var(--t2);
+      font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+    }
+    .tbtn.active { background: var(--surface); color: var(--t1); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .task-row {
+      display: flex; align-items: flex-start; gap: 11px;
+      padding: 12px 13px; border-radius: 12px; margin-bottom: 8px;
+      background: var(--surface-2); border: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .task-row:last-child { margin-bottom: 0; }
+    .t-circle {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border-h); flex-shrink: 0; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; font-size: 12px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .t-circle.done { background: var(--purple); border-color: var(--purple); color: #fff; }
+    .t-body { flex: 1; min-width: 0; }
+    .t-name { font-size: 14px; font-weight: 500; line-height: 1.3; }
+    .t-name.done { text-decoration: line-through; color: var(--t2); }
+    .t-meta { display: flex; align-items: center; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+    .t-time { font-size: 11px; color: var(--t2); }
+    .t-tag { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+    .tt-Work     { background: rgba(124,95,245,0.14); color: var(--purple-l); }
+    .tt-Meeting  { background: rgba(96,165,250,0.13);  color: var(--blue); }
+    .tt-Personal { background: rgba(251,146,60,0.12);  color: var(--orange); }
+    .tt-Content  { background: rgba(52,211,153,0.12);  color: var(--green); }
+    .nt-btn {
+      font-size: 15px; align-self: center; cursor: pointer;
+      opacity: 0.45; transition: opacity 0.2s;
+      -webkit-tap-highlight-color: transparent; padding: 4px;
+    }
+    .nt-btn:active { opacity: 1; }
+
+    .nt-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 13px; border-radius: 12px; margin-bottom: 8px;
+      background: var(--surface-2); border: 1px solid var(--border);
+    }
+    .nt-name { font-size: 13px; color: var(--t2); text-decoration: line-through; flex: 1; margin-right: 10px; }
+    .restore { font-size: 12px; color: var(--t2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+    .empty-s { text-align: center; color: var(--t2); font-size: 13px; padding: 24px 0; }
+    .empty-s .ei { font-size: 28px; margin-bottom: 8px; }
+
+    .add-row { display: flex; gap: 8px; margin-top: 10px; }
+    .add-in {
+      flex: 1; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 13px; color: var(--t1);
+      font-family: inherit; font-size: 14px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .add-in:focus { border-color: var(--purple); }
+    .add-in::placeholder { color: var(--t2); }
+
+    /* ══════════════════════════════════════
+       HABITS
+    ══════════════════════════════════════ */
+    .h-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .h-row:last-child { border-bottom: none; }
+    .h-chk {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid var(--border-h); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; font-size: 13px;
+    }
+    .h-chk.done { background: var(--green); border-color: var(--green); color: #07070e; }
+    .h-info { flex: 1; }
+    .h-name { font-size: 14px; font-weight: 500; }
+    .h-name.done { text-decoration: line-through; color: var(--t2); }
+    .h-streak { font-size: 11px; color: var(--orange); margin-top: 2px; }
+
+    /* ══════════════════════════════════════
+       PEOPLE
+    ══════════════════════════════════════ */
+    .p-row {
+      display: flex; align-items: center; gap: 11px;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .p-row:last-child { border-bottom: none; }
+    .p-av {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--purple-dim); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600; color: var(--purple-l);
+    }
+    .p-info { flex: 1; min-width: 0; }
+    .p-name { font-size: 14px; font-weight: 500; }
+    .p-name.done { text-decoration: line-through; color: var(--t2); }
+    .p-note { font-size: 11px; color: var(--t2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .p-chk {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border-h); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; transition: all 0.2s;
+    }
+    .p-chk.done { background: var(--green); border-color: var(--green); color: #07070e; }
+
+    /* ══════════════════════════════════════
+       QUICK CAPTURE
+    ══════════════════════════════════════ */
+    .cap-in {
+      width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 13px; color: var(--t1);
+      font-family: inherit; font-size: 14px; outline: none;
+      transition: border-color 0.2s; resize: none; margin-bottom: 10px;
+    }
+    .cap-in:focus { border-color: var(--purple); }
+    .cap-in::placeholder { color: var(--t2); }
+    .cap-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 11px; border-radius: 10px;
+      background: var(--surface-2); border: 1px solid var(--border); margin-bottom: 7px;
+    }
+    .cap-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple); flex-shrink: 0; }
+    .cap-txt { font-size: 13px; flex: 1; line-height: 1.4; }
+    .cap-del {
+      color: var(--t2); cursor: pointer; font-size: 18px;
+      line-height: 1; padding: 4px; transition: color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cap-del:active { color: var(--red); }
+
+    /* ══════════════════════════════════════
+       EVENING REVIEW
+    ══════════════════════════════════════ */
+    .rev-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--r);
+      cursor: pointer; margin-bottom: 2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .rev-toggle-l { display: flex; align-items: center; gap: 12px; }
+    .rev-arrow { color: var(--t2); font-size: 18px; transition: transform 0.25s; }
+    .rev-body {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: none; border-radius: 0 0 var(--r) var(--r);
+      padding: 18px; margin-bottom: 12px; display: none;
+    }
+    .rev-body.open { display: block; }
+    .rev-q { margin-bottom: 14px; }
+    .rev-ql { font-size: 12px; font-weight: 600; color: var(--t2); margin-bottom: 6px; }
+
+    /* ══════════════════════════════════════
+       BUTTONS
+    ══════════════════════════════════════ */
+    .btn-p {
+      padding: 13px 18px; background: var(--purple); border: none;
+      border-radius: 10px; color: #fff; font-family: inherit;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-p:active { opacity: 0.8; }
+    .btn-s {
+      padding: 13px 16px; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--t2); font-family: inherit; font-size: 14px;
+      cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-s:active { color: var(--t1); border-color: var(--border-h); }
+    .btn-full { width: 100%; }
+    .btn-icon {
+      background: none; border: none; color: var(--t2);
+      font-size: 22px; cursor: pointer; line-height: 1; transition: color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-icon:active { color: var(--purple-l); }
+
+    /* ══════════════════════════════════════
+       SAVE TOAST
+    ══════════════════════════════════════ */
+    .toast {
+      position: fixed; bottom: calc(64px + env(safe-area-inset-bottom) + 10px);
+      left: 50%; transform: translateX(-50%);
+      background: var(--green); color: #07070e;
+      font-size: 12px; font-weight: 600;
+      padding: 6px 16px; border-radius: 20px;
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none; z-index: 200; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+    @media (min-width: 768px) {
+      .toast { bottom: 20px; }
+    }
+
+    /* ══════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card { animation: fadeUp 0.25s ease; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-h); border-radius: 4px; }
+  </style>
+</head>
+<body class="tab-dnes">
+
+  <!-- ═══════ HEADER ═══════ -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div>
+        <div class="h-greeting-sub" id="dateStr"></div>
+        <div class="h-greeting-main" id="greetMain">Dobré ráno, <span>Klara</span>.</div>
+      </div>
+      <div>
+        <div class="h-clock" id="clock">--:--</div>
+        <div class="h-date">Life OS</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="toast" id="toast">Uložené ✓</div>
+
+  <!-- ═══════ SCROLL WRAPPER ═══════ -->
+  <div class="scroll-wrap">
+
+    <!-- NORTH STAR — always visible -->
+    <div class="north-star">
+      <span class="ns-lbl">⭐ Zámer týždňa</span>
+      <input class="ns-input" id="nsInput"
+        placeholder="Čomu tento týždeň slúži všetko ostatné?"
+        oninput="debounceSave()" />
+    </div>
+
+    <!-- ════════════ DESKTOP TOP GRID ════════════ -->
+    <div class="desktop-grid-top">
+
+      <!-- 1. CHECK-IN (dnes) -->
+      <div class="section sec-dnes">
+        <div class="card" id="checkinCard">
+          <div class="card-hdr">
+            <div class="card-title"><div class="ci ci-o">🌤</div>Ranný check-in</div>
+            <div class="done-badge" id="ciBadge">✓ Hotový</div>
+          </div>
+          <div id="ciForm">
+            <div style="font-size:12px;color:var(--t2);margin-bottom:8px">Energia dnes:</div>
+            <div class="energy-row">
+              <button class="ebtn" onclick="setE(this,1)">😴</button>
+              <button class="ebtn" onclick="setE(this,2)">😐</button>
+              <button class="ebtn" onclick="setE(this,3)">🙂</button>
+              <button class="ebtn" onclick="setE(this,4)">😊</button>
+              <button class="ebtn" onclick="setE(this,5)">🔥</button>
+            </div>
+            <div class="energy-lbl"><span>Vyčerpaná</span><span>Top forma</span></div>
+            <textarea class="txt-area" id="intentIn" rows="2" placeholder="Môj zámer na dnes je..."></textarea>
+            <button class="btn-p btn-full" style="margin-top:11px" onclick="submitCI()">Začať deň →</button>
+          </div>
+          <div id="ciDone" style="display:none">
+            <div class="ci-done-energy" id="ciEnergy">😊</div>
+            <div class="ci-done-lbl">Zámer:</div>
+            <div class="ci-done-intent" id="ciIntent">—</div>
+            <button class="btn-s btn-full" style="margin-top:12px" onclick="resetCI()">Upraviť</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. FOCUS TIMER (fokus) -->
+      <div class="section sec-fokus">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title"><div class="ci ci-p">🎯</div>Current Focus</div>
+            <span class="focus-tag">Deep Work</span>
+          </div>
+          <div class="focus-title">Complete Project Proposal</div>
+          <div class="pbar"><div class="pbar-fill" style="width:65%"></div></div>
+          <div class="focus-meta"><span>⏱ 45 min remaining</span><span>65%</span></div>
+          <div class="timer-num" id="timerNum">25:00</div>
+          <div class="timer-btns">
+            <button class="btn-p" style="flex:1" id="timerBtn" onclick="toggleTimer()">▶ Spustiť</button>
+            <button class="btn-s" onclick="resetTimer()">↺</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. DAILY PROGRESS (fokus) -->
+      <div class="section sec-fokus">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title"><div class="ci ci-g">📊</div>Daily Progress</div>
+          </div>
+          <div class="ring-wrap">
+            <div class="ring-box">
+              <svg width="112" height="112" viewBox="0 0 112 112">
+                <circle cx="56" cy="56" r="46" fill="none" stroke="var(--surface-2)" stroke-width="8"/>
+                <circle cx="56" cy="56" r="46" fill="none" stroke="url(#rg)" stroke-width="8"
+                  stroke-linecap="round" stroke-dasharray="289" id="ringCircle"
+                  stroke-dashoffset="81"/>
+                <defs>
+                  <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#7c5ff5"/>
+                    <stop offset="100%" style="stop-color:#a78bfa"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="ring-num">72<span style="font-size:13px;color:var(--t2)">%</span></div>
+            </div>
+            <div class="ring-lbl">Productivity Score</div>
+          </div>
+          <div class="stats-g">
+            <div class="sbox"><div class="sv" style="color:var(--purple-l)">2.5h</div><div class="sl">Deep Work</div></div>
+            <div class="sbox"><div class="sv" id="statTasks">0/0</div><div class="sl">Tasks hotové</div></div>
+            <div class="sbox"><div class="sv" style="color:var(--green)" id="statHabits">0/0</div><div class="sl">Habits</div></div>
+            <div class="sbox"><div class="sv" id="statCapture">0</div><div class="sl">Idey</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /desktop-grid-top -->
+
+    <!-- ════════════ DESKTOP BOTTOM GRID ════════════ -->
+    <div class="desktop-grid-bottom">
+
+      <!-- TASKS (dnes) -->
+      <div class="section sec-dnes">
+        <div class="card">
+          <div class="card-hdr">
+            <div class="card-title"><div class="ci ci-p">✅</div>Today's Tasks</div>
+          </div>
+          <div class="tabs">
+            <button class="tbtn active" id="tabDnes" onclick="switchTab('today',this)">Dnes</button>
+            <button class="tbtn" id="tabNT" onclick="switchTab('nottoday',this)">Nie dnes 🚫</button>
+          </div>
+          <div class="tab-pane active" id="pane-today">
+            <div id="taskList"></div>
+            <div class="add-row">
+              <input class="add-in" id="newTask" placeholder="+ Nový task..." onkeydown="if(event.key==='Enter')addTask()"/>
+              <button class="btn-p" onclick="addTask()">+</button>
+            </div>
+          </div>
+          <div class="tab-pane" id="pane-nottoday">
+            <div id="ntList"></div>
+            <div class="empty-s" id="ntEmpty"><div class="ei">🎉</div>Nič si vedome neodložila.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="desktop-right">
+
+        <!-- HABITS (habits) -->
+        <div class="section sec-habits">
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title"><div class="ci ci-o">🔥</div>Habits</div>
+              <button class="btn-icon" onclick="addHabit()">+</button>
+            </div>
+            <div id="habitList"></div>
+          </div>
+        </div>
+
+        <!-- PEOPLE (ludia) -->
+        <div class="section sec-ludia">
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title"><div class="ci ci-b">👥</div>Ľudia dnes</div>
+              <button class="btn-icon" onclick="addPerson()">+</button>
+            </div>
+            <div id="peopleList"></div>
+          </div>
+        </div>
+
+        <!-- QUICK CAPTURE (ludia) -->
+        <div class="section sec-ludia">
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title"><div class="ci ci-g">⚡</div>Quick Capture</div>
+            </div>
+            <input class="cap-in" id="capIn" placeholder="Hoď tu myšlienku, nápad, task..."
+              onkeydown="if(event.key==='Enter')addCap()"/>
+            <div id="capList"></div>
+          </div>
+        </div>
+
+        <!-- EVENING REVIEW (review) -->
+        <div class="section sec-review">
+          <div class="rev-toggle" onclick="toggleRev()">
+            <div class="rev-toggle-l">
+              <span style="font-size:20px">🌙</span>
+              <div>
+                <div style="font-size:14px;font-weight:600">Večerný review</div>
+                <div style="font-size:11px;color:var(--t2);margin-top:2px">3 otázky · ~2 min</div>
+              </div>
+            </div>
+            <span class="rev-arrow" id="revArrow">›</span>
+          </div>
+          <div class="rev-body" id="revBody">
+            <div class="rev-q">
+              <div class="rev-ql">🏆 Čo sa dnes podarilo?</div>
+              <textarea class="txt-area" id="r1" rows="2" placeholder="Aj malé veci sa počítajú..." oninput="debounceSave()"></textarea>
+            </div>
+            <div class="rev-q">
+              <div class="rev-ql">➡️ Čo ide zajtra ako prvé?</div>
+              <textarea class="txt-area" id="r2" rows="2" placeholder="Jedno konkrétne..." oninput="debounceSave()"></textarea>
+            </div>
+            <div class="rev-q" style="margin-bottom:0">
+              <div class="rev-ql">✨ Jedno slovo pre dnešok</div>
+              <textarea class="txt-area" id="r3" style="height:50px" placeholder="Produktívny / Turbulentný / Pokojný..." oninput="debounceSave()"></textarea>
+            </div>
+            <button class="btn-p btn-full" style="margin-top:12px" onclick="saveRev()">Uložiť review ✓</button>
+          </div>
+        </div>
+
+        <!-- SETTINGS (review) -->
+        <div class="section sec-review">
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title"><div class="ci ci-p">⚙️</div>Nastavenia</div>
+            </div>
+            <div style="font-size:12px;color:var(--t2);margin-bottom:10px">Tvoje meno:</div>
+            <div class="add-row">
+              <input class="add-in" id="nameIn" placeholder="Klara" oninput="debounceSave()"/>
+              <button class="btn-p" onclick="applyName()">OK</button>
+            </div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <button class="btn-s btn-full" style="color:var(--red)" onclick="clearAll()">🗑 Reset všetkých dát</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /desktop-right -->
+    </div><!-- /desktop-grid-bottom -->
+
+  </div><!-- /scroll-wrap -->
+
+  <!-- ═══════ BOTTOM NAV ═══════ -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="goTab('dnes',this)"><span class="ni">🏠</span>Dnes</button>
+    <button class="nav-btn" onclick="goTab('fokus',this)"><span class="ni">🎯</span>Fokus</button>
+    <button class="nav-btn" onclick="goTab('habits',this)"><span class="ni">🔥</span>Habits</button>
+    <button class="nav-btn" onclick="goTab('ludia',this)"><span class="ni">👥</span>Ľudia</button>
+    <button class="nav-btn" onclick="goTab('review',this)"><span class="ni">🌙</span>Review</button>
+  </nav>
+
+  <script>
+  // ══════════════════════════════════════════════════════════════
+  // DEFAULT DATA
+  // ══════════════════════════════════════════════════════════════
+
+  const DEF_TASKS = [
+    { id:1, name:'Review Q3 Marketing Deck', time:'10:00 AM', tag:'Work',     done:true,  nt:false },
+    { id:2, name:'Sync with Design Team',    time:'1:30 PM',  tag:'Meeting',  done:false, nt:false },
+    { id:3, name:'Update Subscription Copy', time:'3:00 PM',  tag:'Content',  done:false, nt:false },
+    { id:4, name:'Book Flights to SF',        time:'Anytime',  tag:'Personal', done:false, nt:false },
+  ];
+  const DEF_HABITS = [
+    { id:1, name:'Morning Workout',     icon:'🏋️', streak:12, done:true  },
+    { id:2, name:'Drink Water (2L)',    icon:'💧', streak:5,  done:true  },
+    { id:3, name:'Read 30 mins',        icon:'📖', streak:0,  done:false },
+    { id:4, name:'No phone first hour', icon:'📵', streak:3,  done:false },
+  ];
+  const DEF_PEOPLE = [
+    { id:1, name:'Martin', note:'Odpísať ohľadom projektu', done:false },
+    { id:2, name:'Zuzka',  note:'Check-in po stretnutí',   done:false },
+    { id:3, name:'Tomáš',  note:'Feedback na deck',        done:true  },
+  ];
+
+  // ══════════════════════════════════════════════════════════════
+  // STATE
+  // ══════════════════════════════════════════════════════════════
+
+  let tasks    = JSON.parse(JSON.stringify(DEF_TASKS));
+  let habits   = JSON.parse(JSON.stringify(DEF_HABITS));
+  let people   = JSON.parse(JSON.stringify(DEF_PEOPLE));
+  let captures = [];
+  let selE     = 0;
+  let ciDone   = false;
+  let userName = 'Klara';
+  let lastDay  = dayKey();
+  let uid      = 2000;
+
+  const EE = ['','😴','😐','🙂','😊','🔥'];
+  const EL = ['','Vyčerpaná','Unavená','Ok','Dobrá','Top forma!'];
+
+  // ══════════════════════════════════════════════════════════════
+  // LOCALSTORAGE
+  // ══════════════════════════════════════════════════════════════
+
+  function dayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }
+
+  function save() {
+    const state = {
+      tasks, habits, people, captures, userName, lastDay,
+      ns:  document.getElementById('nsInput').value,
+      ci:  { done: ciDone, e: selE, intent: document.getElementById('intentIn').value },
+      rev: { r1: document.getElementById('r1').value, r2: document.getElementById('r2').value, r3: document.getElementById('r3').value },
+    };
+    try { localStorage.setItem('lifeos3', JSON.stringify(state)); } catch(e) {}
+    showToast();
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem('lifeos3');
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      const today = dayKey();
+
+      // daily reset if new day
+      if (s.lastDay !== today) {
+        if (s.tasks)  s.tasks.forEach(t  => { t.done = false; t.nt = false; });
+        if (s.habits) s.habits.forEach(h => { h.done = false; });
+        if (s.people) s.people.forEach(p => { p.done = false; });
+        s.ci  = { done: false, e: 0, intent: '' };
+        s.rev = { r1:'', r2:'', r3:'' };
+        s.lastDay = today;
+      }
+
+      tasks    = s.tasks   || DEF_TASKS;
+      habits   = s.habits  || DEF_HABITS;
+      people   = s.people  || DEF_PEOPLE;
+      captures = s.captures || [];
+      userName = s.userName || 'Klara';
+      lastDay  = s.lastDay  || today;
+
+      if (s.ns) document.getElementById('nsInput').value = s.ns;
+      if (s.ci) {
+        selE = s.ci.e || 0;
+        document.getElementById('intentIn').value = s.ci.intent || '';
+        if (s.ci.done) { ciDone = true; renderCIDone(); }
+        if (selE > 0) {
+          const btns = document.querySelectorAll('.ebtn');
+          if (btns[selE-1]) btns[selE-1].classList.add('active');
+        }
+      }
+      if (s.rev) {
+        document.getElementById('r1').value = s.rev.r1 || '';
+        document.getElementById('r2').value = s.rev.r2 || '';
+        document.getElementById('r3').value = s.rev.r3 || '';
+      }
+      document.getElementById('nameIn').value = userName;
+    } catch(e) { console.warn('load failed', e); }
+  }
+
+  let saveT = null;
+  function debounceSave() { clearTimeout(saveT); saveT = setTimeout(save, 700); }
+
+  let toastT = null;
+  function showToast() {
+    const el = document.getElementById('toast');
+    el.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove('show'), 1600);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // CLOCK
+  // ══════════════════════════════════════════════════════════════
+
+  function tick() {
+    const n = new Date();
+    const h = String(n.getHours()).padStart(2,'0');
+    const m = String(n.getMinutes()).padStart(2,'0');
+    document.getElementById('clock').textContent = `${h}:${m}`;
+
+    const days   = ['Nedeľa','Pondelok','Utorok','Streda','Štvrtok','Piatok','Sobota'];
+    const months = ['jan','feb','mar','apr','máj','jún','júl','aug','sep','okt','nov','dec'];
+    document.getElementById('dateStr').textContent =
+      `${days[n.getDay()]}, ${n.getDate()}. ${months[n.getMonth()]}`;
+
+    const hr = n.getHours();
+    const g = hr < 5 ? 'Dobrú noc' : hr < 12 ? 'Dobré ráno' : hr < 17 ? 'Dobrý deň' : 'Dobrý večer';
+    document.getElementById('greetMain').innerHTML = `${g}, <span>${h$(userName)}</span>.`;
+  }
+  setInterval(tick, 1000);
+
+  // ══════════════════════════════════════════════════════════════
+  // NAVIGATION
+  // ══════════════════════════════════════════════════════════════
+
+  function goTab(name, btn) {
+    document.body.className = `tab-${name}`;
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // CHECK-IN
+  // ══════════════════════════════════════════════════════════════
+
+  function setE(btn, level) {
+    selE = level;
+    document.querySelectorAll('.ebtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function submitCI() {
+    if (!selE) { alert('Vyber úroveň energie 🙂'); return; }
+    ciDone = true;
+    renderCIDone();
+    save();
+  }
+
+  function renderCIDone() {
+    const intent = document.getElementById('intentIn').value.trim();
+    document.getElementById('ciEnergy').textContent = `${EE[selE]}  ${EL[selE]} (${selE}/5)`;
+    document.getElementById('ciIntent').textContent = intent || 'Bez zámer — aj to je ok 😊';
+    document.getElementById('ciForm').style.display = 'none';
+    document.getElementById('ciDone').style.display = 'block';
+    document.getElementById('ciBadge').style.display = 'flex';
+  }
+
+  function resetCI() {
+    ciDone = false;
+    document.getElementById('ciForm').style.display = 'block';
+    document.getElementById('ciDone').style.display = 'none';
+    document.getElementById('ciBadge').style.display = 'none';
+    save();
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // TIMER
+  // ══════════════════════════════════════════════════════════════
+
+  let tRun = false, tSec = 25*60, tIv = null;
+
+  function p2(n) { return String(n).padStart(2,'0'); }
+  function drawTimer() {
+    document.getElementById('timerNum').textContent = `${p2(Math.floor(tSec/60))}:${p2(tSec%60)}`;
+  }
+  function toggleTimer() {
+    if (tRun) {
+      clearInterval(tIv); tRun = false;
+      document.getElementById('timerBtn').textContent = '▶ Pokračovať';
+    } else {
+      tRun = true;
+      document.getElementById('timerBtn').textContent = '⏸ Pauza';
+      tIv = setInterval(() => {
+        if (tSec > 0) { tSec--; drawTimer(); }
+        else { clearInterval(tIv); tRun = false; tSec = 25*60; drawTimer(); document.getElementById('timerBtn').textContent = '▶ Spustiť ☕'; }
+      }, 1000);
+    }
+  }
+  function resetTimer() {
+    clearInterval(tIv); tRun = false; tSec = 25*60; drawTimer();
+    document.getElementById('timerBtn').textContent = '▶ Spustiť';
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // TASKS
+  // ══════════════════════════════════════════════════════════════
+
+  function renderTasks() {
+    const today = tasks.filter(t => !t.nt);
+    const nt    = tasks.filter(t => t.nt);
+    const done  = tasks.filter(t => t.done).length;
+
+    document.getElementById('taskList').innerHTML = today.map(t => `
+      <div class="task-row">
+        <div class="t-circle ${t.done?'done':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</div>
+        <div class="t-body">
+          <div class="t-name ${t.done?'done':''}">${h$(t.name)}</div>
+          <div class="t-meta">
+            <span class="t-time">⏱ ${t.time}</span>
+            <span class="t-tag tt-${t.tag}">${t.tag}</span>
+          </div>
+        </div>
+        ${!t.done ? `<span class="nt-btn" title="Nie dnes" onclick="toNT(${t.id})">🚫</span>` : ''}
+      </div>`).join('');
+
+    document.getElementById('ntList').innerHTML = nt.map(t => `
+      <div class="nt-row">
+        <span class="nt-name">${h$(t.name)}</span>
+        <span class="restore" onclick="fromNT(${t.id})">↩ Vrátiť</span>
+      </div>`).join('');
+
+    document.getElementById('ntEmpty').style.display = nt.length ? 'none' : 'block';
+    const s = `${done}/${tasks.length}`;
+    document.getElementById('statTasks').textContent = s;
+    debounceSave();
+  }
+
+  function toggleTask(id) { const t = tasks.find(t=>t.id===id); if(t) t.done=!t.done; renderTasks(); }
+  function toNT(id)        { const t = tasks.find(t=>t.id===id); if(t) { t.nt=true; t.done=false; } renderTasks(); }
+  function fromNT(id)      { const t = tasks.find(t=>t.id===id); if(t) t.nt=false; renderTasks(); }
+
+  function addTask() {
+    const el = document.getElementById('newTask');
+    const v = el.value.trim(); if (!v) return;
+    tasks.push({ id:uid++, name:v, time:'Anytime', tag:'Work', done:false, nt:false });
+    el.value = ''; renderTasks();
+  }
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`pane-${name}`).classList.add('active');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // HABITS
+  // ══════════════════════════════════════════════════════════════
+
+  function renderHabits() {
+    document.getElementById('habitList').innerHTML = habits.map(h => `
+      <div class="h-row" onclick="toggleHabit(${h.id})">
+        <div class="h-chk ${h.done?'done':''}">${h.done?'✓':''}</div>
+        <span style="font-size:20px">${h.icon}</span>
+        <div class="h-info">
+          <div class="h-name ${h.done?'done':''}">${h$(h.name)}</div>
+          <div class="h-streak">🔥 ${h.streak} day streak</div>
+        </div>
+      </div>`).join('');
+    const done = habits.filter(h=>h.done).length;
+    document.getElementById('statHabits').textContent = `${done}/${habits.length}`;
+    debounceSave();
+  }
+
+  function toggleHabit(id) {
+    const h = habits.find(h=>h.id===id); if(!h) return;
+    h.done = !h.done;
+    h.streak = h.done ? h.streak+1 : Math.max(0,h.streak-1);
+    renderHabits();
+  }
+  function addHabit() {
+    const n = prompt('Nový habit:'); if(!n) return;
+    habits.push({ id:uid++, name:n, icon:'⭐', streak:0, done:false });
+    renderHabits();
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // PEOPLE
+  // ══════════════════════════════════════════════════════════════
+
+  function renderPeople() {
+    document.getElementById('peopleList').innerHTML = people.map(p => `
+      <div class="p-row" onclick="togglePerson(${p.id})">
+        <div class="p-av">${p.name[0].toUpperCase()}</div>
+        <div class="p-info">
+          <div class="p-name ${p.done?'done':''}">${h$(p.name)}</div>
+          <div class="p-note">${h$(p.note)}</div>
+        </div>
+        <div class="p-chk ${p.done?'done':''}">${p.done?'✓':''}</div>
+      </div>`).join('');
+    debounceSave();
+  }
+
+  function togglePerson(id) { const p = people.find(p=>p.id===id); if(p) p.done=!p.done; renderPeople(); }
+  function addPerson() {
+    const n = prompt('Meno:'); if(!n) return;
+    const note = prompt('Čo riešiš s touto osobou?') || '';
+    people.push({ id:uid++, name:n, note, done:false });
+    renderPeople();
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // QUICK CAPTURE
+  // ══════════════════════════════════════════════════════════════
+
+  function addCap() {
+    const el = document.getElementById('capIn');
+    const v = el.value.trim(); if (!v) return;
+    captures.unshift({ id:uid++, text:v });
+    el.value = ''; renderCaps();
+  }
+  function removeCap(id) { captures = captures.filter(c=>c.id!==id); renderCaps(); }
+  function renderCaps() {
+    document.getElementById('capList').innerHTML = captures.map(c => `
+      <div class="cap-row">
+        <div class="cap-dot"></div>
+        <div class="cap-txt">${h$(c.text)}</div>
+        <div class="cap-del" onclick="removeCap(${c.id})">×</div>
+      </div>`).join('');
+    document.getElementById('statCapture').textContent = captures.length;
+    debounceSave();
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // EVENING REVIEW
+  // ══════════════════════════════════════════════════════════════
+
+  let revOpen = false;
+  function toggleRev() {
+    revOpen = !revOpen;
+    document.getElementById('revBody').classList.toggle('open', revOpen);
+    document.getElementById('revArrow').style.transform = revOpen ? 'rotate(90deg)' : '';
+  }
+  function saveRev() { save(); alert('Review uložený ✓'); }
+
+  // ══════════════════════════════════════════════════════════════
+  // SETTINGS
+  // ══════════════════════════════════════════════════════════════
+
+  function applyName() {
+    const v = document.getElementById('nameIn').value.trim();
+    if (v) { userName = v; tick(); save(); }
+  }
+  function clearAll() {
+    if (!confirm('Naozaj chceš zmazať všetky dáta? Táto akcia je nevratná.')) return;
+    localStorage.removeItem('lifeos3');
+    location.reload();
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // UTILS
+  // ══════════════════════════════════════════════════════════════
+
+  function h$(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // BOOT
+  // ══════════════════════════════════════════════════════════════
+
+  load();
+  tick();
+  renderTasks();
+  renderHabits();
+  renderPeople();
+  renderCaps();
+  drawTimer();
+  document.getElementById('nameIn').value = userName;
+
+  </script>
+</body>
+</html>
